@@ -1,24 +1,51 @@
 {
   "expo": {
-    "name": "my-js-app",
-    "slug": "my-js-app",
+    "name": "Nkwa Bible",
+    "slug": "nkwa-bible",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/icons.png",
+    "scheme": "nkwabible",
     "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splashscreen.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#166534"
+    },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": false,
+      "bundleIdentifier": "com.gideonmensah.nkwabible",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSPhotoLibraryUsageDescription": "This app uses the photo library only when users choose to select or share images."
+      }
     },
     "android": {
+      "package": "com.gideonmensah.nkwabible",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "monochromeImage": "./assets/android-icon-monochrome.png",
+        "backgroundColor": "#166534"
       }
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/icons.png"
+    },
+    "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splashscreen.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#166534"
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "6551dd2e-da70-4f77-abc9-c9c356828bd2"
+      }
     }
   }
 }

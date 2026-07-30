@@ -1,20 +1,29 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import "react-native-gesture-handler";
+import AppNavigator from "./src/navigation/AppNavigator";
+
+import { BibleProvider } from "./src/context/BibleContext";
+import { BookmarkProvider } from "./src/context/BookmarkContext";
+import { ReadingProvider } from "./src/context/ReadingContext";
+import { NoteProvider } from "./src/context/NoteContext";
+import { HighlightProvider } from "./src/context/HighlightContext";
+import { SermonProvider } from "./src/context/SermonContext";
 
 export default function App() {
   return (
-    <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
+    <BibleProvider>
+      <BookmarkProvider>
+        <SermonProvider>  
+        <ReadingProvider>
+          <NoteProvider>
+            <HighlightProvider>
+
+              <AppNavigator />
+
+            </HighlightProvider>
+          </NoteProvider>
+        </ReadingProvider>
+      </SermonProvider>
+      </BookmarkProvider>
+    </BibleProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
