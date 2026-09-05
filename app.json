@@ -7,11 +7,7 @@
     "icon": "./assets/icons.png",
     "scheme": "nkwabible",
     "userInterfaceStyle": "light",
-    "splash": {
-      "image": "./assets/splashscreen.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#166534"
-    },
+
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.gideonmensah.nkwabible",
@@ -40,7 +36,10 @@
           "resizeMode": "contain",
           "backgroundColor": "#166534"
         }
-      ]
+      ],
+      "expo-sharing",
+      "expo-font",
+      "expo-status-bar"
     ],
     "extra": {
       "eas": {

@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import React, { useContext, useState } from "react";
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
 
 import { SermonContext } from "../context/SermonContext";
 import { Ionicons } from "@expo/vector-icons";
+import { exportSermonToPdf } from "../utils/sermonPdf";
 
 export default function SermonDetailScreen({
   route,
@@ -23,6 +24,23 @@ export default function SermonDetailScreen({
   const sermon = sermons.find(
     (item) => item.id === sermonId
   );
+  const [isExporting, setIsExporting] = useState(false);
+
+  async function handleExport() {
+    if (isExporting) return;
+    setIsExporting(true);
+    try {
+      await exportSermonToPdf(sermon);
+    } catch (error) {
+      if (__DEV__) console.warn("Sermon PDF export failed.", error);
+      Alert.alert(
+        error?.code === "SHARING_UNAVAILABLE" ? "Sharing unavailable" : "Could not export PDF",
+        error?.code === "SHARING_UNAVAILABLE" ? "File sharing is not available on this device." : "The sermon PDF could not be created or shared. Please try again."
+      );
+    } finally {
+      setIsExporting(false);
+    }
+  }
 
   if (!sermon) {
     return (
@@ -102,6 +120,15 @@ export default function SermonDetailScreen({
         <Text style={styles.buttonText}>
           Edit Sermon
         </Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={[styles.exportButton, isExporting && styles.disabledButton]}
+        onPress={handleExport}
+        disabled={isExporting}
+      >
+        <Ionicons name="document-attach-outline" size={20} color="#fff" />
+        <Text style={styles.buttonText}>{isExporting ? "Creating PDF..." : "Export to PDF"}</Text>
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -187,6 +214,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 40,
   },
+
+  exportButton: {
+    backgroundColor: "#2563eb",
+    padding: 16,
+    borderRadius: 16,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+
+  disabledButton: { opacity: 0.6 },
 
   buttonText: {
     color: "#fff",

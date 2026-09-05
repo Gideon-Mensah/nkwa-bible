@@ -13,6 +13,7 @@ import { BibleContext } from "../context/BibleContext";
 import { ReadingContext } from "../context/ReadingContext";
 import { NoteContext } from "../context/NoteContext";
 import dailyVerses from "../data/dailyVerses";
+import { getCanonicalBookId, getBookName } from "../data/bookMappings";
 
 export default function HomeScreen({ navigation }) {
   const { language, setLanguage } = useContext(BibleContext);
@@ -34,6 +35,8 @@ export default function HomeScreen({ navigation }) {
 
   const dailyVerse =
     dailyVerses[dayOfYear % dailyVerses.length];
+  const lastReadBookId = lastRead?.bookId || getCanonicalBookId(lastRead?.book);
+  const lastReadBookName = getBookName(lastReadBookId, language);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -83,14 +86,14 @@ export default function HomeScreen({ navigation }) {
           </Text>
         </View>
 
-        {lastRead && (
+        {lastRead && lastReadBookId && (
           <TouchableOpacity
             style={styles.continueCard}
             onPress={() =>
               navigation.navigate("Bible", {
                 screen: "Verses",
                 params: {
-                  bookName: lastRead.book,
+                  bookId: lastReadBookId,
                   chapterNumber: lastRead.chapter,
                 },
               })
@@ -103,7 +106,7 @@ export default function HomeScreen({ navigation }) {
             <View style={styles.cardTextBox}>
               <Text style={styles.cardLabel}>Continue Reading</Text>
               <Text style={styles.cardTitle}>
-                {lastRead.book} {lastRead.chapter}
+                {lastReadBookName} {lastRead.chapter}
               </Text>
             </View>
 

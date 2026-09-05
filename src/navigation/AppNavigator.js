@@ -17,6 +17,7 @@ import SermonScreen from "../screens/SermonScreen";
 import AddSermonScreen from "../screens/AddSermonScreen";
 import SermonDetailScreen from "../screens/SermonDetailScreen";
 import EditSermonScreen from "../screens/EditSermonScreen";
+import BibleStudyScreen from "../screens/BibleStudyScreen";
 
 
 const Tab = createBottomTabNavigator();
@@ -34,6 +35,8 @@ function BibleStack() {
       <Stack.Screen name="Chapters" component={ChaptersScreen} />
 
       <Stack.Screen name="Verses" component={VersesScreen} />
+
+      <Stack.Screen name="BibleStudy" component={BibleStudyScreen} options={{ title: "Nkwa Bible Study AI" }} />
 
       <Stack.Screen name="Bookmarks" component={BookmarksScreen} />
 

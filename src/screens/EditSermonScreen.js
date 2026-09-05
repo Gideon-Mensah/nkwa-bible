@@ -1,14 +1,18 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useRef, useState } from "react";
 import {
   View,
   Text,
   TextInput,
   StyleSheet,
   TouchableOpacity,
-  SafeAreaView,
-  ScrollView,
+  Keyboard,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
   Alert,
 } from "react-native";
+
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 
 import { SermonContext } from "../context/SermonContext";
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
@@ -26,6 +30,18 @@ export default function EditSermonScreen({ route, navigation }) {
   const [date, setDate] = useState(sermon?.date || "");
   const [scripture, setScripture] = useState(sermon?.scripture || "");
   const [notes, setNotes] = useState(sermon?.notes || "");
+
+  const [notesExpanded, setNotesExpanded] = useState(false);
+  const [notesFocused, setNotesFocused] = useState(false);
+  const [expandedFocused, setExpandedFocused] = useState(false);
+  const expandedInputRef = useRef(null);
+  const wordCount = notes.trim() ? notes.trim().split(/\s+/u).length : 0;
+  const wordCountLabel = `${wordCount} ${wordCount === 1 ? "word" : "words"}`;
+
+  function closeNotes() {
+    Keyboard.dismiss();
+    setNotesExpanded(false);
+  }
 
   if (!sermon) {
     return (
@@ -58,7 +74,10 @@ export default function EditSermonScreen({ route, navigation }) {
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAwareScrollView
         enableOnAndroid={true}
-        extraScrollHeight={20}>
+        extraScrollHeight={24}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag">
 
         <View style={styles.container} >
           <Text style={styles.title}>Add Sermon Note</Text>
@@ -99,21 +118,85 @@ export default function EditSermonScreen({ route, navigation }) {
             onChangeText={setScripture}
           />
 
-          <Text style={styles.label}>Sermon Notes</Text>
+          <View style={styles.notesHeader}>
+            <Text style={styles.label}>Sermon Notes</Text>
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel="Expand sermon notes"
+              style={styles.editorControl}
+              onPress={() => {
+                Keyboard.dismiss();
+                setNotesExpanded(true);
+              }}>
+              <Text style={styles.editorControlText}>Expand ↗</Text>
+            </TouchableOpacity>
+          </View>
           <TextInput
-            style={[styles.input, styles.notesInput]}
-            placeholder="Write your sermon notes here..."
+            accessibilityLabel="Sermon notes"
+            style={[styles.notesInput, styles.inlineNotes, notesFocused && styles.notesFocused]}
+            placeholder="Write your sermon notes, key points, illustrations, and reflections here..."
+            placeholderTextColor="#6b7280"
             value={notes}
             onChangeText={setNotes}
+            onFocus={() => setNotesFocused(true)}
+            onBlur={() => setNotesFocused(false)}
             multiline
+            scrollEnabled
             textAlignVertical="top"
           />
+          <Text style={styles.wordCount}>{wordCountLabel}</Text>
 
           <TouchableOpacity style={styles.saveButton} onPress={handleUpdate}>
             <Text style={styles.saveButtonText}>Save Changes</Text>
           </TouchableOpacity>
         </View>
       </KeyboardAwareScrollView>
+      <Modal
+        visible={notesExpanded}
+        animationType="slide"
+        presentationStyle="fullScreen"
+        onRequestClose={closeNotes}
+        onShow={() => expandedInputRef.current?.focus()}>
+        <SafeAreaProvider>
+          <SafeAreaView style={styles.safeArea}>
+            <KeyboardAvoidingView
+              style={styles.modalContent}
+              behavior={Platform.OS === "ios" ? "padding" : "height"}>
+              <View style={styles.notesHeader}>
+                <TouchableOpacity
+                  accessibilityRole="button"
+                  accessibilityLabel="Close sermon notes"
+                  style={styles.editorControl}
+                  onPress={closeNotes}>
+                  <Text style={styles.editorControlText}>‹ Back</Text>
+                </TouchableOpacity>
+                <Text style={styles.modalTitle} accessibilityRole="header">Sermon Notes</Text>
+                <TouchableOpacity
+                  accessibilityRole="button"
+                  style={styles.doneButton}
+                  onPress={closeNotes}>
+                  <Text style={styles.saveButtonText}>Done</Text>
+                </TouchableOpacity>
+              </View>
+              <TextInput
+                ref={expandedInputRef}
+                accessibilityLabel="Expanded sermon notes"
+                style={[styles.notesInput, styles.expandedNotes, expandedFocused && styles.notesFocused]}
+                placeholder="Write your sermon notes, key points, illustrations, and reflections here..."
+                placeholderTextColor="#6b7280"
+                value={notes}
+                onChangeText={setNotes}
+                onFocus={() => setExpandedFocused(true)}
+                onBlur={() => setExpandedFocused(false)}
+                multiline
+                scrollEnabled
+                textAlignVertical="top"
+              />
+              <Text style={styles.wordCount}>{wordCountLabel}</Text>
+            </KeyboardAvoidingView>
+          </SafeAreaView>
+        </SafeAreaProvider>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -125,7 +208,6 @@ const styles = StyleSheet.create({
   },
 
   container: {
-    flex: 1,
     padding: 20,
   },
 
@@ -142,39 +224,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
 
-  input: {
-    backgroundColor: "#ffffff",
-    padding: 16,
-    borderRadius: 16,
-    marginBottom: 14,
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-  },
-
-  notesInput: {
-    minHeight: 200,
-  },
-
-  saveButton: {
-    backgroundColor: "#166534",
-    padding: 17,
-    borderRadius: 18,
-    alignItems: "center",
-    marginTop: 6,
-    marginBottom: 40,
-  },
-
-  saveButtonText: {
-    color: "#ffffff",
-    fontSize: 16,
-    fontWeight: "900",
-  },
-
-  formContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 10,
-  },
   input: {
     backgroundColor: "#FFFFFF",
     borderRadius: 14,
@@ -198,18 +247,82 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
 
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 32,
+  },
+
+  notesHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 10,
+    gap: 8,
+  },
+
   notesInput: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 14,
-    minHeight: 180,
-    padding: 16,
-    textAlignVertical: "top",
+    color: "#123524",
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: "#dce4dd",
+    padding: 18,
+    fontSize: 17,
+    lineHeight: 26,
+  },
 
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+  inlineNotes: {
+    height: 340,
+    minHeight: 340,
+  },
+
+  notesFocused: {
+    borderColor: "#166534",
+  },
+
+  wordCount: {
+    fontSize: 13,
+    color: "#59665d",
+    textAlign: "right",
+    paddingVertical: 10,
+  },
+
+  editorControl: {
+    minHeight: 44,
+    justifyContent: "center",
+    paddingHorizontal: 8,
+  },
+
+  editorControlText: {
+    color: "#166534",
+    fontSize: 15,
+    fontWeight: "700",
+  },
+
+  modalContent: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+  },
+
+  modalTitle: {
+    flexShrink: 1,
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#123524",
+  },
+
+  expandedNotes: {
+    flex: 1,
+    minHeight: 0,
+  },
+
+  doneButton: {
+    minHeight: 44,
+    justifyContent: "center",
+    backgroundColor: "#166534",
+    paddingHorizontal: 16,
+    borderRadius: 12,
   },
 
   saveButton: {

@@ -1,217 +1,156 @@
-# 📖 Nkwa Bible
+# Nkwa Bible
 
-> **Read the Holy Bible in Twi and English, anytime and anywhere.**
->
-> Nkwa Bible is a modern, offline Bible application built with **React Native** and **Expo**. It is designed to provide a clean, fast, and distraction-free Bible reading experience for Twi and English speakers while offering practical tools for Bible study, sermon preparation, and daily devotion.
+Nkwa Bible is an Expo SDK 56 mobile Bible application with offline Asante Twi and World English Bible reading, bookmarks, notes, highlights, sermon notes, PDF sermon export, and an optional retrieval-grounded study aid called **Nkwa Bible Study AI**.
 
-<p align="center">
-  <a href="https://apps.apple.com/app/id6776429352">
-    <img src="https://img.shields.io/badge/Download%20on%20the-App%20Store-black?style=for-the-badge&logo=apple" alt="Download on the App Store">
-  </a>
-</p>
+## Architecture
 
-<p align="center">
-  <img src="https://img.shields.io/badge/React%20Native-Mobile-blue?style=flat-square&logo=react">
-  <img src="https://img.shields.io/badge/Expo-SDK-000020?style=flat-square&logo=expo">
-  <img src="https://img.shields.io/badge/Platform-iOS%20%7C%20Android-success?style=flat-square">
-</p>
-
----
-
-# ✨ Features
-
-## 📖 Bible Reading
-
-- Offline Twi (Asante) Bible
-- Offline English Bible
-- Complete Old and New Testament
-- Fast book, chapter and verse navigation
-- Continue reading from your last opened passage
-
-## 🔍 Search
-
-- Search by verse or keyword
-- Instant search results
-- Quickly locate Bible passages
-
-## ⭐ Bookmarks
-
-- Save favourite verses
-- View bookmarked scriptures anytime
-- Quickly return to important passages
-
-## 📝 Sermon Notes
-
-- Create sermon notes
-- Edit saved notes
-- Delete notes
-- Record:
-  - Sermon title
-  - Preacher
-  - Church
-  - Date
-  - Main scripture
-  - Full sermon notes
-
-## 📤 Verse Sharing
-
-- Share Bible verses
-- Copy verses
-- Share through social media and messaging apps
-
-## 🎨 Modern Experience
-
-- Beautiful and clean interface
-- Responsive layout
-- Offline-first design
-- Fast performance
-- Simple and intuitive navigation
-
----
-
-# 📱 Availability
-
-| Platform | Status |
-|----------|--------|
-| 🍎 iOS | ✅ Available on the App Store |
-| 🤖 Android | 🚧 Google Play release in progress |
-
----
-
-# 🛠 Technology Stack
-
-- React Native
-- Expo
-- JavaScript (ES6+)
-- React Navigation
-- AsyncStorage
-- Expo Sharing
-- Expo Clipboard
-- React Native Vector Icons
-
----
-
-# 📂 Project Structure
-
-```
-src/
-├── assets/
-├── components/
-├── context/
-├── data/
-├── navigation/
-├── screens/
-├── utils/
-├── App.js
-└── app.json
+```text
+Expo mobile app
+  ├─ local Bible JSON → reading remains fully offline
+  ├─ AsyncStorage → personal data + capped study cache
+  └─ canonical reference only
+             │ HTTPS POST /api/bible-study
+             ▼
+Node/Express server
+  ├─ validates selection against local WEB data
+  ├─ retrieves ranked, verified OpenBible.info references
+  ├─ retrieves curated, evidence-backed relationships
+  ├─ OpenAI Responses API + strict Structured Outputs (store: false)
+  └─ revalidates and hydrates every returned reference from local Bible data
 ```
 
----
+The mobile app never receives or contains the OpenAI API key. Bible reading, personal notes, bookmarks, highlights, sermons, and cached studies remain usable when the study server is unavailable.
 
-# 🚀 Getting Started
+## Mobile setup
 
-Clone the repository
-
-```bash
-git clone https://github.com/Gideon-Mensah/nkwa-bible.git
-```
-
-Go into the project
-
-```bash
-cd nkwa-bible
-```
-
-Install dependencies
+Requirements: Node.js 20 or newer and the Expo development environment.
 
 ```bash
 npm install
+cp .env.example .env
+npm run start:web
 ```
 
-Start Expo
+Set `EXPO_PUBLIC_BIBLE_AI_API_URL` to the public URL of the backend. For a physical phone, `localhost` means the phone itself; use your computer's LAN address (for example `http://192.168.1.20:8787`) during local development. This public value is only a server address and is not a secret.
+
+Expo reads `EXPO_PUBLIC_*` variables when it starts. After creating or changing `.env`, stop Expo and start it again; use `npx expo start --clear` if a stale bundle still shows the old configuration.
+
+## Backend setup
+
+Create an API key in the [OpenAI API dashboard](https://platform.openai.com/api-keys). Do not paste it into chat, mobile source, Expo configuration, screenshots, or Git.
 
 ```bash
-npx expo start
+cd server
+npm install
+cp .env.example .env
+# Edit server/.env locally and set OPENAI_API_KEY.
+npm run validate:data
+npm test
+npm start
 ```
 
-Run on Android
+From the repository root, the equivalent backend commands are `npm run server:start` and `npm run server:dev`. The server listens on `HOST=0.0.0.0` by default so a phone on the same trusted Wi-Fi network can reach it. Keep the firewall limited to trusted/private networks.
+
+For local development, use two terminals:
 
 ```bash
-npx expo run:android
+# Terminal 1
+npm run server:dev
+
+# Terminal 2
+npm run start:web
 ```
 
-Run on iOS
+Check `http://localhost:8787/health` before generating a study. `ok: true` means the backend is reachable; `aiConfigured: true` means a non-empty server-side key was loaded. The endpoint never returns the key. On a physical iPhone, put the Mac's current Wi-Fi IPv4 address in the root `.env`, for example `EXPO_PUBLIC_BIBLE_AI_API_URL=http://192.168.1.20:8787`, then restart Expo. The Mac and phone must be on the same network, and the firewall must allow Node on that private network.
+
+Server environment variables:
+
+| Variable | Purpose | Default |
+| --- | --- | --- |
+| `OPENAI_API_KEY` | Server-only OpenAI credential | required for generation |
+| `OPENAI_MODEL` | Structured Outputs-compatible model | `gpt-5-mini` |
+| `HOST` | Bind address; use all interfaces for trusted LAN testing | `0.0.0.0` |
+| `PORT` | HTTP port | `8787` |
+| `ALLOWED_ORIGINS` | Comma-separated browser origins; native apps generally send no Origin | empty allows all |
+| `REQUEST_TIMEOUT_MS` | Server and OpenAI request deadline | `45000` |
+| `RATE_LIMIT_WINDOW_MS` | Rate-limit window | `60000` |
+| `RATE_LIMIT_MAX` | Requests per IP per window | `10` |
+| `TRUST_PROXY` | Trusted reverse-proxy hop count (`1` on many managed hosts; verify with your host) | unset |
+
+The implementation uses the official OpenAI JavaScript SDK, the Responses API, strict Structured Outputs, and `store: false`. `gpt-5-mini` is a documented cost-conscious default; set `OPENAI_MODEL` to another model only after confirming Structured Outputs compatibility in the [official model documentation](https://developers.openai.com/api/docs/models/).
+
+## Grounding and data
+
+The backend derives authoritative passage text from `src/data/web_bible.json` or `src/data/bible.json`; client-supplied passage text is never accepted. Model-visible evidence contains the selected passage, a small immediate context window, retrieved verified cross-references, and verified relationships. After generation, unknown or altered cross-references are removed and all retained references receive local Bible text.
+
+Cross-references come from the [OpenBible.info Bible Cross References dataset](https://www.openbible.info/labs/cross-references/), primarily based on the public-domain *Treasury of Scripture Knowledge* and licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). The committed generated index contains references and ranking votes—not ESV quotations. Full attribution and regeneration details are in `server/src/data/CROSS_REFERENCES.md`.
+
+The genealogy file is a small curated foundation covering selected Adamic, patriarchal, royal, priestly, and Jesus-family relationships. Every entry has local-Bible evidence and an explicit/inference/disputed label. It does not claim complete Bible-wide coverage. Extend `server/src/data/bibleRelationships.json` only with verified evidence, then run `npm run validate:data`.
+
+## Privacy and security
+
+The mobile request sends exactly: `selectionType`, canonical `bookId`, `chapter`, optional `verseStart`/`verseEnd`, and `language`. It does not send user identity, device identifiers, sermon notes, personal notes, bookmarks, highlights, or reading history.
+
+Controls include:
+
+- server-only API key and ignored `.env` files;
+- 24 KB JSON body limit and strict request validation;
+- canonical 66-book, chapter, verse, language, and 25-verse range validation;
+- per-IP rate limiting and request deadlines;
+- configurable CORS origins for browser clients;
+- safe client-facing errors without secrets or stack traces;
+- prompt-injection-resistant instructions treating retrieved text as data;
+- strict response schema plus deterministic post-generation reference verification;
+- no remote response storage by default (`store: false`).
+
+## Cache and API cost
+
+Completed studies are cached only on the device in the separate `bibleStudyCache:v1` AsyncStorage key. Entries expire after 30 days, the cache is capped at 30 studies, language is part of the key, and schema/data-version changes invalidate old keys. Regenerate explicitly creates a new paid API request. The cache can be removed independently with `clearBibleStudyCache()`.
+
+OpenAI API use has a financial cost. Configure server-side usage monitoring and project spend limits, keep rate limits conservative, and review model pricing before deployment. No database is required for the current stateless backend.
+
+## Deployment
+
+Deploy `server/` to a Node.js 20+ service such as Cloud Run, Render, Fly.io, Railway, or an equivalent HTTPS platform. Configure environment variables in the host's secret manager, restrict `ALLOWED_ORIGINS` for web use, place the service behind HTTPS/reverse-proxy controls, and point `EXPO_PUBLIC_BIBLE_AI_API_URL` at it before creating a mobile build. Never bake `OPENAI_API_KEY` into Expo/EAS variables intended for the client.
+
+## Validation
 
 ```bash
-npx expo run:ios
+# Mobile
+npm run validate:bible
+npm run test:bible-study
+npx expo-doctor
+npx expo export --platform ios
+npx expo export --platform android
+
+# Server
+cd server
+npm run lint
+npm run validate:data
+npm test
 ```
 
----
+## Manual testing
 
-# 📸 Screenshots
+1. Start the backend with a valid server-side API key and start Expo with the backend URL.
+2. From a verse, tap the sparkle action and verify a single-verse study.
+3. Tap **Select passage**, choose start/end verses, and verify the 25-verse limit and Cancel action.
+4. Tap **Study Chapter** and verify a full chapter request.
+5. Switch English/Twi on the study screen and verify the canonical selection stays unchanged.
+6. Tap a cross-reference and verify the translated book and correct chapter open.
+7. Turn off the backend: cached studies should open, new studies should show the internet-required message, and normal Bible features should continue working.
+8. Verify Retry, Regenerate, duplicate-tap prevention, large accessibility text, and small-screen layout.
 
-Screenshots will be added soon.
+## Known limitations
 
-Recommended screenshots include:
+- AI explanations can be mistaken; the interface labels this as a study aid and distinguishes facts, inferences, interpretations, and disputed claims.
+- Genealogy coverage is intentionally incomplete and must be expanded through reviewed evidence.
+- OpenBible.info links express varying strengths of association; votes rank candidates, while the generated relevance explanation remains an AI-produced interpretation.
+- A real AI generation cannot be verified without a configured OpenAI account and funded API project.
+- Production deployment still requires a hosting choice, HTTPS URL, operational monitoring, and spend-limit decisions.
 
-- Home Screen
-- Bible Books
-- Bible Reader
-- Search
-- Bookmarks
-- Sermon Notes
-- Daily Verse
+## Support and privacy
 
----
+Support: geolumia68@gmail.com
 
-# 🗺 Roadmap
-
-Future versions of Nkwa Bible will include:
-
-- 📅 Daily Devotions
-- 📖 Reading Plans
-- 🎧 Audio Bible
-- 📚 Bible Dictionary
-- 📖 Concordance
-- 🙏 Prayer Journal
-- ⭐ Verse Highlighting
-- 🔗 Cross References
-- ☁️ Cloud Backup & Sync
-- 👤 User Accounts
-- 🌙 Dark Mode
-- 📊 Reading Statistics
-- 📅 Bible Reading Streaks
-
----
-
-# 🤝 Contributing
-
-Contributions, feature suggestions, and bug reports are welcome.
-
-If you have an idea that could improve Nkwa Bible, feel free to open an issue or submit a pull request.
-
----
-
-# 👨‍💻 Developer
-
-**Gideon Owusu Agyei Mensah**
-
-Software Developer | Mobile Application Developer | Accounting Systems Developer
-
-GitHub:
-https://github.com/Gideon-Mensah
-
-Email:
-geolumia68@gmail.com
-
----
-
-# 🙏 Vision
-
-Nkwa Bible was created to make God's Word more accessible through technology.
-
-The long-term vision is to become one of the leading Bible applications for African languages by providing a high-quality, modern, and user-friendly Bible experience for Christians around the world.
-
-> **"Your word is a lamp to my feet and a light to my path."**
->
-> **— Psalm 119:105**
+See `Privacy.html` for the existing application privacy information. Update published privacy disclosures before production deployment to describe canonical Bible-study requests sent to the selected backend and OpenAI processing.

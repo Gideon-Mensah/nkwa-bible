@@ -23,6 +23,10 @@ export default function VerseItem({
   language,
   onAddNote,
   onHighlight,
+  onStudy,
+  selectionMode = false,
+  isSelected = false,
+  onSelect,
 }) {
   const shareCardRef = useRef(null);
 
@@ -111,9 +115,14 @@ export default function VerseItem({
 
   return (
     <>
-      <View
+      <TouchableOpacity
+        activeOpacity={selectionMode ? 0.7 : 1}
+        onPress={selectionMode ? () => onSelect?.(Number(verseNumber)) : undefined}
+        accessibilityRole={selectionMode ? "button" : undefined}
+        accessibilityLabel={selectionMode ? `Select verse ${verseNumber}` : undefined}
         style={[
           styles.card,
+          isSelected && styles.selectedCard,
           currentHighlight && {
             backgroundColor: currentHighlight.color,
             borderLeftWidth: 5,
@@ -126,7 +135,10 @@ export default function VerseItem({
             {book} {chapter}:{verseNumber}
           </Text>
 
-          <View style={styles.actions}>
+          {selectionMode ? <Ionicons name={isSelected ? "checkmark-circle" : "ellipse-outline"} size={24} color="#166534" /> : <View style={styles.actions}>
+            <TouchableOpacity accessibilityLabel="Study this verse with AI" onPress={() => onStudy?.(Number(verseNumber))} style={styles.iconButton}>
+              <Ionicons name="sparkles-outline" size={22} color="#2563eb" />
+            </TouchableOpacity>
             <TouchableOpacity
               onPress={() => onHighlight && onHighlight(verseData)}
               style={styles.iconButton}
@@ -161,11 +173,11 @@ export default function VerseItem({
             <TouchableOpacity onPress={openShareOptions} style={styles.iconButton}>
               <Ionicons name="share-social-outline" size={22} color="#166534" />
             </TouchableOpacity>
-          </View>
+          </View>}
         </View>
 
         <Text style={styles.text}>{text}</Text>
-      </View>
+      </TouchableOpacity>
 
       <View style={styles.hiddenShareCard}>
         <ViewShot ref={shareCardRef} options={{ format: "png", quality: 1 }}>
@@ -194,6 +206,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 3 },
     elevation: 3,
   },
+  selectedCard: { borderWidth: 2, borderColor: "#166534", backgroundColor: "#ecfdf5" },
 
   header: {
     flexDirection: "row",
