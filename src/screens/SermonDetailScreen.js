@@ -62,9 +62,9 @@ export default function SermonDetailScreen({
         {
           text: "Delete",
           style: "destructive",
-          onPress: () => {
-            deleteSermon(sermon.id);
-            navigation.goBack();
+          onPress: async () => {
+            if (await deleteSermon(sermon.id)) navigation.goBack();
+            else Alert.alert("Could not delete", "The sermon has been preserved. Please try again.");
           },
         },
       ]

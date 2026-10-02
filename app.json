@@ -2,14 +2,14 @@
   "expo": {
     "name": "Nkwa Bible",
     "slug": "nkwa-bible",
-    "version": "1.1.0",
-    "orientation": "portrait",
+    "version": "1.2.0",
+    "orientation": "default",
     "icon": "./assets/icons.png",
     "scheme": "nkwabible",
     "userInterfaceStyle": "light",
 
     "ios": {
-      "supportsTablet": false,
+      "supportsTablet": true,
       "bundleIdentifier": "com.gideonmensah.nkwabible",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,

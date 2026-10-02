@@ -1,80 +1,31 @@
-import React, { createContext, useEffect, useRef, useState } from "react";
+import React, { createContext, useCallback, useEffect, useRef, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { createStoredCollection } from "../services/storedCollection";
+import { createRecordId } from "../utils/studyWorkspace";
 
 export const SermonContext = createContext();
 
 export function SermonProvider({ children }) {
   const [sermons, setSermons] = useState([]);
-  const sermonsRef = useRef([]);
-  const storageWriteRef = useRef(Promise.resolve());
-
-  useEffect(() => {
-    loadSermons();
-  }, []);
-
-  async function loadSermons() {
-    try {
-      const saved = await AsyncStorage.getItem("sermons");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          sermonsRef.current = parsed;
-          setSermons(parsed);
-        }
-      }
-    } catch (error) {
-      console.warn("Unable to load sermon notes.", error);
-    }
-  }
-
-  function persistSermons(newSermons) {
-    storageWriteRef.current = storageWriteRef.current
-      .catch(() => undefined)
-      .then(() => AsyncStorage.setItem("sermons", JSON.stringify(newSermons)))
-      .catch((error) => console.warn("Unable to save sermon notes.", error));
-  }
-
-  function applySermonUpdate(updater) {
-    const next = updater(sermonsRef.current);
-    sermonsRef.current = next;
+  const [storageError, setStorageError] = useState(false);
+  const store = useRef(null);
+  if (!store.current) store.current = createStoredCollection(AsyncStorage, "sermons", (next) => {
     setSermons(next);
-    persistSermons(next);
-  }
+    setStorageError(false);
+  }, (message, error) => { console.warn(message, error); setStorageError(true); });
 
-  function addSermon(sermon) {
-    const newSermon = {
-      ...sermon,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString(),
-    };
+  useEffect(() => { store.current.load(); }, []);
 
-    applySermonUpdate((current) => [newSermon, ...current]);
-  }
+  const addSermon = useCallback((sermon) => {
+    const record = { ...sermon, id: sermon.id || createRecordId(), createdAt: sermon.createdAt || new Date().toISOString() };
+    return store.current.update((current) => current.some((item) => item.id === record.id) ? current : [record, ...current]);
+  }, []);
+  const deleteSermon = useCallback((id) => store.current.update((current) => current.filter((item) => item.id !== id)), []);
+  const updateSermon = useCallback((id, updatedSermon) => store.current.update((current) => {
+    if (!current.some((item) => item.id === id)) throw new Error("This sermon no longer exists.");
+    return current.map((sermon) => sermon.id === id
+      ? { ...sermon, ...updatedSermon, id: sermon.id, createdAt: sermon.createdAt } : sermon);
+  }), []);
 
-  function deleteSermon(id) {
-    applySermonUpdate((current) => current.filter((item) => item.id !== id));
-  }
-
-  function updateSermon(id, updatedSermon) {
-    applySermonUpdate((current) =>
-      current.map((sermon) =>
-        sermon.id === id ? { ...sermon, ...updatedSermon } : sermon
-      )
-    );
-  }
-
-  return (
-    <SermonContext.Provider
-      value={{
-        sermons,
-        addSermon,
-        deleteSermon,
-        updateSermon,
-      }}
-
-      
-    >
-      {children}
-    </SermonContext.Provider>
-  );
+  return <SermonContext.Provider value={{ sermons, addSermon, deleteSermon, updateSermon, storageError }}>{children}</SermonContext.Provider>;
 }

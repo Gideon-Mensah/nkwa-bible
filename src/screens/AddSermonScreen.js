@@ -1,4 +1,4 @@
-import React, { useContext, useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   View,
   Text,
@@ -9,17 +9,17 @@ import {
   KeyboardAvoidingView,
   Modal,
   Platform,
-  Alert,
 } from "react-native";
 
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 
-import { SermonContext } from "../context/SermonContext";
+import useSermonSave from "../components/study/useSermonSave";
+import SermonFields from "../components/study/SermonFields";
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 export default function AddSermonScreen({ navigation }) {
-  const { addSermon } = useContext(SermonContext);
 
+  const { save, saving } = useSermonSave();
   const [title, setTitle] = useState("");
   const [preacher, setPreacher] = useState("");
   const [church, setChurch] = useState("");
@@ -39,22 +39,9 @@ export default function AddSermonScreen({ navigation }) {
     setNotesExpanded(false);
   }
 
-  function handleSave() {
-    if (!title.trim()) {
-      Alert.alert("Missing title", "Please enter the sermon title.");
-      return;
-    }
-
-    addSermon({
-      title: title.trim(),
-      preacher: preacher.trim(),
-      church: church.trim(),
-      date: date.trim(),
-      scripture: scripture.trim(),
-      notes: notes.trim(),
-    });
-
-    navigation.goBack();
+  async function handleSave() {
+    const id = await save({ title, preacher, church, date, scripture, notes }, undefined);
+    if (id) navigation.goBack();
   }
 
   return (
@@ -69,41 +56,9 @@ export default function AddSermonScreen({ navigation }) {
         <View style={styles.container} >
           <Text style={styles.title}>Add Sermon Note</Text>
 
-          <Text style={styles.label}>Title</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Sermon title"
-            value={title}
-            onChangeText={setTitle}
-          />
-
-          <Text style={styles.label}>Preacher</Text>
-          <TextInput
-            style={styles.input}
-            value={preacher}
-            onChangeText={setPreacher}
-          />
-
-          <Text style={styles.label}>Church</Text>
-          <TextInput
-            style={styles.input}
-            value={church}
-            onChangeText={setChurch}
-          />
-
-          <Text style={styles.label}>Date</Text>
-          <TextInput
-            style={styles.input}
-            value={date}
-            onChangeText={setDate}
-          />
-
-          <Text style={styles.label}>Key Scripture</Text>
-          <TextInput
-            style={styles.input}
-            value={scripture}
-            onChangeText={setScripture}
-          />
+          <SermonFields disabled={saving} values={{ title, preacher, church, date, scripture }}
+            onChange={(field, text) => ({ title: setTitle, preacher: setPreacher, church: setChurch, date: setDate, scripture: setScripture })[field](text)}
+            labelStyle={styles.label} inputStyle={styles.input} />
 
           <View style={styles.notesHeader}>
             <Text style={styles.label}>Sermon Notes</Text>
@@ -119,6 +74,7 @@ export default function AddSermonScreen({ navigation }) {
             </TouchableOpacity>
           </View>
           <TextInput
+            editable={!saving}
             accessibilityLabel="Sermon notes"
             style={[styles.notesInput, styles.inlineNotes, notesFocused && styles.notesFocused]}
             placeholder="Write your sermon notes, key points, illustrations, and reflections here..."
@@ -133,8 +89,8 @@ export default function AddSermonScreen({ navigation }) {
           />
           <Text style={styles.wordCount}>{wordCountLabel}</Text>
 
-          <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-            <Text style={styles.saveButtonText}>Save Sermon</Text>
+          <TouchableOpacity accessibilityRole="button" disabled={saving} style={styles.saveButton} onPress={handleSave}>
+            <Text style={styles.saveButtonText}>{saving ? "Saving…" : "Save Sermon"}</Text>
           </TouchableOpacity>
         </View>
       </KeyboardAwareScrollView>
@@ -167,6 +123,7 @@ export default function AddSermonScreen({ navigation }) {
               </View>
               <TextInput
                 ref={expandedInputRef}
+                editable={!saving}
                 accessibilityLabel="Expanded sermon notes"
                 style={[styles.notesInput, styles.expandedNotes, expandedFocused && styles.notesFocused]}
                 placeholder="Write your sermon notes, key points, illustrations, and reflections here..."

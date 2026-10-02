@@ -21,13 +21,14 @@ export default function NotesScreen() {
     const [editText, setEditText] = useState("");
     const [modalVisible, setModalVisible] = useState(false);
 
-    function saveEditedNote() {
-        updateNote(
+    async function saveEditedNote() {
+        const success = await updateNote(
             selectedNote.id,
             editText.trim()
         );
 
-        setModalVisible(false);
+        if (success) setModalVisible(false);
+        else Alert.alert("Could not save", "Your note is still open. Please try again.");
     }
 
     function openEditModal(note) {
@@ -48,7 +49,9 @@ export default function NotesScreen() {
                 {
                     text: "Delete",
                     style: "destructive",
-                    onPress: () => deleteNote(id),
+                    onPress: async () => {
+                        if (!(await deleteNote(id))) Alert.alert("Could not delete", "Your note has been preserved. Please try again.");
+                    },
                 },
             ]
         );
@@ -82,7 +85,7 @@ export default function NotesScreen() {
                         <View style={styles.card}>
                             <View style={styles.header}>
                                 <Text style={styles.reference}>
-                                    {item.book} {item.chapter}:{item.verse}
+                                    {item.book} {item.chapter}{item.verse != null ? `:${item.verse}` : ""}
                                 </Text>
 
                                 <TouchableOpacity

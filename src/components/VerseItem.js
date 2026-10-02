@@ -27,6 +27,8 @@ export default function VerseItem({
   selectionMode = false,
   isSelected = false,
   onSelect,
+  onSelectStudy,
+  studySelected = false,
 }) {
   const shareCardRef = useRef(null);
 
@@ -115,14 +117,10 @@ export default function VerseItem({
 
   return (
     <>
-      <TouchableOpacity
-        activeOpacity={selectionMode ? 0.7 : 1}
-        onPress={selectionMode ? () => onSelect?.(Number(verseNumber)) : undefined}
-        accessibilityRole={selectionMode ? "button" : undefined}
-        accessibilityLabel={selectionMode ? `Select verse ${verseNumber}` : undefined}
+      <View
         style={[
           styles.card,
-          isSelected && styles.selectedCard,
+          (isSelected || studySelected) && styles.selectedCard,
           currentHighlight && {
             backgroundColor: currentHighlight.color,
             borderLeftWidth: 5,
@@ -131,15 +129,19 @@ export default function VerseItem({
         ]}
       >
         <View style={styles.header}>
-          <Text style={styles.reference}>
-            {book} {chapter}:{verseNumber}
-          </Text>
+          <TouchableOpacity style={{ minHeight: 44, justifyContent: "center" }}
+            accessibilityRole="button" accessibilityLabel={`Select verse ${verseNumber} for ${selectionMode ? "passage" : "study"}`}
+            accessibilityState={{ selected: selectionMode ? isSelected : studySelected }}
+            onPress={() => selectionMode ? onSelect?.(Number(verseNumber)) : onSelectStudy?.(Number(verseNumber))}>
+            <Text style={styles.reference}>{book} {chapter}:{verseNumber}</Text>
+          </TouchableOpacity>
 
           {selectionMode ? <Ionicons name={isSelected ? "checkmark-circle" : "ellipse-outline"} size={24} color="#166534" /> : <View style={styles.actions}>
-            <TouchableOpacity accessibilityLabel="Study this verse with AI" onPress={() => onStudy?.(Number(verseNumber))} style={styles.iconButton}>
+            <TouchableOpacity accessibilityRole="button" accessibilityLabel="Study this verse with AI" onPress={() => onStudy?.(Number(verseNumber))} style={styles.iconButton}>
               <Ionicons name="sparkles-outline" size={22} color="#2563eb" />
             </TouchableOpacity>
             <TouchableOpacity
+              accessibilityRole="button" accessibilityLabel="Highlight verse"
               onPress={() => onHighlight && onHighlight(verseData)}
               style={styles.iconButton}
             >
@@ -148,6 +150,7 @@ export default function VerseItem({
 
             {currentHighlight && (
               <TouchableOpacity
+                accessibilityRole="button" accessibilityLabel="Remove highlight"
                 onPress={() => removeHighlight(verseData)}
                 style={styles.iconButton}
               >
@@ -156,13 +159,14 @@ export default function VerseItem({
             )}
 
             <TouchableOpacity
+              accessibilityRole="button" accessibilityLabel="Write a study note for verse"
               onPress={() => onAddNote && onAddNote(verseData)}
               style={styles.iconButton}
             >
               <Ionicons name="document-text-outline" size={22} color="#166534" />
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={toggleBookmark} style={styles.iconButton}>
+            <TouchableOpacity accessibilityRole="button" accessibilityLabel={isBookmarked ? "Remove bookmark" : "Bookmark verse"} onPress={toggleBookmark} style={styles.iconButton}>
               <Ionicons
                 name={isBookmarked ? "bookmark" : "bookmark-outline"}
                 size={22}
@@ -170,14 +174,18 @@ export default function VerseItem({
               />
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={openShareOptions} style={styles.iconButton}>
+            <TouchableOpacity accessibilityRole="button" accessibilityLabel="Share verse" onPress={openShareOptions} style={styles.iconButton}>
               <Ionicons name="share-social-outline" size={22} color="#166534" />
             </TouchableOpacity>
           </View>}
         </View>
 
-        <Text style={styles.text}>{text}</Text>
-      </TouchableOpacity>
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel={`${text}. Select verse ${verseNumber}`}
+          accessibilityState={{ selected: selectionMode ? isSelected : studySelected }}
+          onPress={() => selectionMode ? onSelect?.(Number(verseNumber)) : onSelectStudy?.(Number(verseNumber))}>
+          <Text style={styles.text}>{text}</Text>
+        </TouchableOpacity>
+      </View>
 
       <View style={styles.hiddenShareCard}>
         <ViewShot ref={shareCardRef} options={{ format: "png", quality: 1 }}>
@@ -209,7 +217,7 @@ const styles = StyleSheet.create({
   selectedCard: { borderWidth: 2, borderColor: "#166534", backgroundColor: "#ecfdf5" },
 
   header: {
-    flexDirection: "row",
+    flexDirection: "column",
     justifyContent: "space-between",
     alignItems: "flex-start",
     marginBottom: 10,
@@ -225,11 +233,14 @@ const styles = StyleSheet.create({
   actions: {
     flexDirection: "row",
     alignItems: "center",
-    marginLeft: 8,
+    flexWrap: "wrap",
   },
 
   iconButton: {
-    marginLeft: 10,
+    minHeight: 44,
+    minWidth: 44,
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   text: {
